@@ -1,0 +1,2974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pharmacy Analytics Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+            --dark-color: #2c3e50;
+            --light-color: #ecf0f1;
+            --gray-color: #95a5a6;
+            --pharmacy-blue: #2980b9;
+            --pharmacy-green: #27ae60;
+            --pharmacy-purple: #8e44ad;
+            --shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            --shadow-light: 0 4px 12px rgba(0, 0, 0, 0.05);
+            --gradient-primary: linear-gradient(135deg, #3498db, #2980b9);
+            --gradient-success: linear-gradient(135deg, #2ecc71, #27ae60);
+            --gradient-warning: linear-gradient(135deg, #f39c12, #e67e22);
+            --gradient-danger: linear-gradient(135deg, #e74c3c, #c0392b);
+            --border-radius: 16px;
+            --border-radius-sm: 8px;
+            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        body {
+            background-color: #f8fafc;
+            color: #333;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--pharmacy-blue), #1a5276);
+            color: white;
+            padding: 24px 32px;
+            border-radius: var(--border-radius);
+            margin-bottom: 30px;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--pharmacy-green), var(--pharmacy-purple));
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo i {
+            font-size: 2.8rem;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        .logo h1 {
+            font-size: 1.9rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .logo p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-top: 4px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .branch-selector {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px;
+            border-radius: var(--border-radius-sm);
+            backdrop-filter: blur(10px);
+        }
+
+        .branch-btn {
+            padding: 10px 20px;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            font-weight: 500;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .branch-btn::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 2px;
+            background: white;
+            transition: var(--transition);
+            transform: translateX(-50%);
+        }
+
+        .branch-btn:hover::after {
+            width: 70%;
+        }
+
+        .branch-btn.active {
+            background: white;
+            color: var(--pharmacy-blue);
+            box-shadow: var(--shadow-light);
+        }
+
+        .file-upload {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .file-upload-btn {
+            padding: 12px 24px;
+            background: var(--gradient-success);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius-sm);
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: var(--transition);
+            box-shadow: var(--shadow-light);
+        }
+
+        .file-upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(46, 204, 113, 0.3);
+        }
+
+        .file-upload input[type="file"] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .date-range {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 12px;
+            border-radius: var(--border-radius-sm);
+            backdrop-filter: blur(10px);
+        }
+
+        .date-input {
+            padding: 10px 14px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: var(--border-radius-sm);
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-weight: 500;
+        }
+
+        .date-input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .date-display {
+            color: white;
+            font-size: 0.9rem;
+            font-weight: 500;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: var(--border-radius-sm);
+            display: none;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .date-display.active {
+            display: flex;
+        }
+
+        .apply-btn {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: var(--border-radius-sm);
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .apply-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 24px;
+            box-shadow: var(--shadow-light);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+        }
+
+        .card.sales::before {
+            background: var(--gradient-primary);
+        }
+
+        .card.clients::before {
+            background: var(--gradient-success);
+        }
+
+        .card.basket::before {
+            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+        }
+
+        .card.products::before {
+            background: var(--gradient-warning);
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+
+        .card-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            background: rgba(52, 152, 219, 0.1);
+            color: var(--primary-color);
+        }
+
+        .clients .card-icon {
+            background: rgba(46, 204, 113, 0.1);
+            color: var(--secondary-color);
+        }
+
+        .basket .card-icon {
+            background: rgba(155, 89, 182, 0.1);
+            color: #9b59b6;
+        }
+
+        .products .card-icon {
+            background: rgba(241, 196, 15, 0.1);
+            color: #f1c40f;
+        }
+
+        .card-content {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .card-value {
+            font-size: 2.4rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .card-label {
+            color: var(--gray-color);
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .card-change {
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 4px;
+        }
+
+        .card-change.positive {
+            color: var(--secondary-color);
+        }
+
+        .card-change.negative {
+            color: var(--danger-color);
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .reports-section {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 28px;
+            box-shadow: var(--shadow-light);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #f1f5f9;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--dark-color);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section-title i {
+            color: var(--primary-color);
+            font-size: 1.3rem;
+        }
+
+        .export-btn {
+            padding: 10px 20px;
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius-sm);
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: var(--transition);
+            box-shadow: var(--shadow-light);
+        }
+
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(52, 152, 219, 0.3);
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #f1f5f9;
+            margin-bottom: 24px;
+            gap: 4px;
+        }
+
+        .tab {
+            padding: 14px 24px;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--gray-color);
+            border-bottom: 3px solid transparent;
+            transition: var(--transition);
+            position: relative;
+            border-radius: 6px 6px 0 0;
+        }
+
+        .tab:hover {
+            color: var(--primary-color);
+            background: rgba(52, 152, 219, 0.05);
+        }
+
+        .tab.active {
+            color: var(--primary-color);
+            border-bottom: 3px solid var(--primary-color);
+            background: rgba(52, 152, 219, 0.08);
+        }
+
+        .tab-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: var(--danger-color);
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .chart-container {
+            height: 320px;
+            margin-bottom: 24px;
+            position: relative;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            border-radius: var(--border-radius-sm);
+            overflow: hidden;
+            box-shadow: var(--shadow-light);
+        }
+
+        thead {
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+        }
+
+        th, td {
+            padding: 16px 20px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        th {
+            font-weight: 700;
+            color: var(--dark-color);
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+        }
+
+        tr {
+            transition: var(--transition);
+        }
+
+        tr:hover {
+            background-color: #f8fafc;
+            transform: translateX(4px);
+        }
+
+        .product-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-right: 8px;
+        }
+
+        .badge-fast {
+            background: rgba(46, 204, 113, 0.1);
+            color: var(--secondary-color);
+        }
+
+        .badge-slow {
+            background: rgba(231, 76, 60, 0.1);
+            color: var(--danger-color);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--gray-color);
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            color: #e2e8f0;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: #64748b;
+        }
+
+        .empty-state p {
+            font-size: 1rem;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        footer {
+            text-align: center;
+            padding: 24px;
+            color: var(--gray-color);
+            font-size: 0.9rem;
+            border-top: 1px solid #e2e8f0;
+            margin-top: 40px;
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-light);
+        }
+
+        .loader {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            backdrop-filter: blur(5px);
+        }
+
+        .loader.active {
+            display: flex;
+        }
+
+        .spinner {
+            width: 70px;
+            height: 70px;
+            border: 5px solid #f1f5f9;
+            border-top: 5px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        .loader-text {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--dark-color);
+            margin-top: 15px;
+        }
+
+        .loader-progress {
+            width: 300px;
+            height: 8px;
+            background: #f1f5f9;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 15px;
+        }
+
+        .loader-progress-bar {
+            height: 100%;
+            background: var(--gradient-primary);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .notification {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            padding: 16px 24px;
+            background: white;
+            border-radius: var(--border-radius-sm);
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transform: translateX(400px);
+            transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            z-index: 1000;
+            border-left: 4px solid var(--secondary-color);
+            max-width: 400px;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification i {
+            font-size: 1.5rem;
+            color: var(--secondary-color);
+        }
+
+        .notification-content h4 {
+            font-size: 1rem;
+            margin-bottom: 4px;
+            color: var(--dark-color);
+        }
+
+        .notification-content p {
+            font-size: 0.9rem;
+            color: var(--gray-color);
+        }
+
+        .growth-rate {
+            font-size: 0.9rem;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            border-radius: var(--border-radius-sm);
+            margin-top: 20px;
+        }
+
+        .growth-rate h4 {
+            margin-bottom: 12px;
+            color: var(--dark-color);
+            font-size: 1rem;
+        }
+
+        .growth-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .growth-item:last-child {
+            border-bottom: none;
+        }
+
+        .growth-value {
+            font-weight: 600;
+        }
+
+        .growth-value.positive {
+            color: var(--secondary-color);
+        }
+
+        .growth-value.negative {
+            color: var(--danger-color);
+        }
+
+        /* New filter controls */
+        .filter-controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: center;
+            padding: 15px;
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            border-radius: var(--border-radius-sm);
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .filter-label {
+            font-weight: 600;
+            color: var(--dark-color);
+            font-size: 0.9rem;
+        }
+
+        .filter-input {
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: var(--border-radius-sm);
+            width: 80px;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .filter-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius-sm);
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: var(--transition);
+        }
+
+        .filter-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
+        }
+
+        .filter-reset-btn {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius-sm);
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: var(--transition);
+        }
+
+        .filter-reset-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(149, 165, 166, 0.2);
+        }
+
+        @media (max-width: 1400px) {
+            .dashboard {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .filter-controls {
+                flex-wrap: wrap;
+            }
+        }
+
+        @media (max-width: 992px) {
+            header {
+                flex-direction: column;
+                gap: 20px;
+                align-items: stretch;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .branch-selector {
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            
+            .date-range {
+                flex-wrap: wrap;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .tabs {
+                flex-wrap: wrap;
+            }
+            
+            .tab {
+                flex: 1;
+                min-width: 120px;
+                text-align: center;
+            }
+            
+            .filter-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .filter-group {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+
+        .stats-summary {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+            padding: 15px;
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            border-radius: var(--border-radius-sm);
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 12px;
+        }
+
+        .stat-value {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--dark-color);
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--gray-color);
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="loader" id="loader">
+        <div class="spinner"></div>
+        <div class="loader-text" id="loaderText">Processing your data...</div>
+        <div class="loader-progress">
+            <div class="loader-progress-bar" id="loaderProgress"></div>
+        </div>
+    </div>
+
+    <div class="notification" id="notification">
+        <i class="fas fa-check-circle"></i>
+        <div class="notification-content">
+            <h4 id="notificationTitle">Success</h4>
+            <p id="notificationMessage">Data loaded successfully</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-pills"></i>
+                <div>
+                    <h1>Pharmacy Dashboard</h1>
+                   
+                </div>
+            </div>
+            
+            <div class="controls">
+                <div class="date-display" id="dateDisplay">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span id="dateRangeText">No data loaded</span>
+                </div>
+                
+                <div class="branch-selector">
+                    <button class="branch-btn active" data-branch="all">All Branches</button>
+                    <button class="branch-btn" data-branch="Pharmacy POS">Syokimau Branch</button>
+                    <button class="branch-btn" data-branch="Katani Pharmacy">Katani Branch</button>
+                </div>
+                
+                <div class="file-upload">
+                    <button class="file-upload-btn">
+                        <i class="fas fa-file-upload"></i> Upload Excel File
+                    </button>
+                    <input type="file" id="fileInput" accept=".xlsx, .xls, .csv">
+                </div>
+                
+                <div class="date-range">
+                    <input type="date" id="startDate" class="date-input">
+                    <span style="color: white;">to</span>
+                    <input type="date" id="endDate" class="date-input">
+                    <button id="applyDate" class="apply-btn">
+                        <i class="fas fa-filter"></i> Apply Filter
+                    </button>
+                </div>
+            </div>
+        </header>
+        
+        <div class="dashboard">
+            <div class="card sales">
+                <div class="card-header">
+                    <div class="card-content">
+                        <div class="card-value" id="totalSales">KSh 0</div>
+                        <div class="card-label">Total Sales</div>
+                        <div class="card-change positive" id="salesChange">
+                            <i class="fas fa-arrow-up"></i> 0%
+                        </div>
+                    </div>
+                    <div class="card-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card clients">
+                <div class="card-header">
+                    <div class="card-content">
+                        <div class="card-value" id="clientsCount">0</div>
+                        <div class="card-label">Total Clients</div>
+                        <div class="card-change positive" id="clientsChange">
+                            <i class="fas fa-arrow-up"></i> 0%
+                        </div>
+                    </div>
+                    <div class="card-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card basket">
+                <div class="card-header">
+                    <div class="card-content">
+                        <div class="card-value" id="basketValue">KSh 0</div>
+                        <div class="card-label">Avg Basket Value</div>
+                        <div class="card-change positive" id="basketChange">
+                            <i class="fas fa-arrow-up"></i> 0%
+                        </div>
+                    </div>
+                    <div class="card-icon">
+                        <i class="fas fa-shopping-basket"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card products">
+                <div class="card-header">
+                    <div class="card-content">
+                        <div class="card-value" id="productsCount">0</div>
+                        <div class="card-label">Products Sold</div>
+                        <div class="card-change positive" id="productsChange">
+                            <i class="fas fa-arrow-up"></i> 0%
+                        </div>
+                    </div>
+                    <div class="card-icon">
+                        <i class="fas fa-capsules"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="reports-section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-chart-bar"></i> Analytics Reports
+                    </h2>
+                    <button class="export-btn" id="exportReport">
+                        <i class="fas fa-file-export"></i> Export Full Report
+                    </button>
+                </div>
+                
+                <!-- New Filter Controls -->
+                <div class="filter-controls">
+                    <div class="filter-group">
+                        <span class="filter-label">Fast Moving:</span>
+                        <input type="number" id="fastMovingFilter" class="filter-input" min="1" max="1000" value="20" placeholder="Number of products">
+                        <span class="filter-label">products</span>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <span class="filter-label">Slow Moving:</span>
+                        <input type="number" id="slowMovingFilter" class="filter-input" min="1" max="1000" value="20" placeholder="Number of products">
+                        <span class="filter-label">products</span>
+                    </div>
+                    
+                    <button id="applyFilters" class="filter-btn">
+                        <i class="fas fa-filter"></i> Apply Filters
+                    </button>
+                    
+                    <button id="resetFilters" class="filter-reset-btn">
+                        <i class="fas fa-redo"></i> Reset Filters
+                    </button>
+                </div>
+                
+                <div class="tabs">
+                    <div class="tab active" data-tab="fast-moving">
+                        Fast Moving Products
+                        <span class="tab-badge" id="fastMovingBadge">0</span>
+                    </div>
+                    <div class="tab" data-tab="slow-moving">
+                        Slow Moving Products
+                        <span class="tab-badge" id="slowMovingBadge">0</span>
+                    </div>
+                    <div class="tab" data-tab="cashiers">
+                        Cashiers Report
+                    </div>
+                    <div class="tab" data-tab="categories">
+                        Categories Report
+                    </div>
+                    <div class="tab" data-tab="customers">
+                        Top Customers
+                    </div>
+                </div>
+                
+                <div id="fast-moving" class="tab-content active">
+                    <div class="chart-container">
+                        <canvas id="fastMovingChart"></canvas>
+                    </div>
+                    <div class="stats-summary">
+                        <div class="stat-item">
+                            <div class="stat-value" id="fastMovingTotal">0</div>
+                            <div class="stat-label">Products</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="fastMovingQty">0</div>
+                            <div class="stat-label">Total Quantity</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="fastMovingValue">KSh 0</div>
+                            <div class="stat-label">Total Value</div>
+                        </div>
+                    </div>
+                    <table id="fastMovingTable">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Quantity Sold</th>
+                                <th>Sales Value</th>
+                                <th>Category</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fastMovingBody">
+                            <tr>
+                                <td colspan="4" class="empty-state">
+                                    <i class="fas fa-chart-bar"></i>
+                                    <h3>No Data Available</h3>
+                                    <p>Upload an Excel file to see fast moving products analysis</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div id="slow-moving" class="tab-content">
+                    <div class="chart-container">
+                        <canvas id="slowMovingChart"></canvas>
+                    </div>
+                    <div class="stats-summary">
+                        <div class="stat-item">
+                            <div class="stat-value" id="slowMovingTotal">0</div>
+                            <div class="stat-label">Products</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="slowMovingQty">0</div>
+                            <div class="stat-label">Total Quantity</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="slowMovingValue">KSh 0</div>
+                            <div class="stat-label">Total Value</div>
+                        </div>
+                    </div>
+                    <table id="slowMovingTable">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Quantity Sold</th>
+                                <th>Sales Value</th>
+                                <th>Category</th>
+                            </tr>
+                        </thead>
+                        <tbody id="slowMovingBody">
+                            <tr>
+                                <td colspan="4" class="empty-state">
+                                    <i class="fas fa-chart-bar"></i>
+                                    <h3>No Data Available</h3>
+                                    <p>Upload an Excel file to see slow moving products analysis</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div id="cashiers" class="tab-content">
+                    <div class="chart-container">
+                        <canvas id="cashiersChart"></canvas>
+                    </div>
+                    <table id="cashiersTable">
+                        <thead>
+                            <tr>
+                                <th>Cashier</th>
+                                <th>Transactions</th>
+                                <th>Total Sales</th>
+                                <th>Avg Basket Value</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cashiersBody">
+                            <tr>
+                                <td colspan="4" class="empty-state">
+                                    <i class="fas fa-user-tie"></i>
+                                    <h3>No Data Available</h3>
+                                    <p>Upload an Excel file to see cashiers performance report</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div id="categories" class="tab-content">
+                    <div class="chart-container">
+                        <canvas id="categoriesChart"></canvas>
+                    </div>
+                    <table id="categoriesTable">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Products Sold</th>
+                                <th>Sales Value</th>
+                                <th>% of Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="categoriesBody">
+                            <tr>
+                                <td colspan="4" class="empty-state">
+                                    <i class="fas fa-tags"></i>
+                                    <h3>No Data Available</h3>
+                                    <p>Upload an Excel file to see categories analysis</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div id="customers" class="tab-content">
+                    <div class="chart-container">
+                        <canvas id="customersChart"></canvas>
+                    </div>
+                    <table id="customersTable">
+                        <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th>Visits</th>
+                                <th>Total Spent</th>
+                                <th>Avg Spend</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customersBody">
+                            <tr>
+                                <td colspan="4" class="empty-state">
+                                    <i class="fas fa-user-friends"></i>
+                                    <h3>No Data Available</h3>
+                                    <p>Upload an Excel file to see top customers report</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="reports-section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-chart-line"></i> Sales Trends
+                    </h2>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="salesTrendChart"></canvas>
+                </div>
+                
+                <div class="section-header" style="margin-top: 30px;">
+                    <h2 class="section-title">
+                        <i class="fas fa-credit-card"></i> Payment Methods
+                    </h2>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="paymentChart"></canvas>
+                </div>
+                
+                <div class="growth-rate">
+                    <h4>Growth Rate Analysis</h4>
+                    <div class="growth-item">
+                        <span>Sales Growth</span>
+                        <span class="growth-value positive" id="salesGrowth">0%</span>
+                    </div>
+                    <div class="growth-item">
+                        <span>Client Growth</span>
+                        <span class="growth-value positive" id="clientGrowth">0%</span>
+                    </div>
+                    <div class="growth-item">
+                        <span>Product Growth</span>
+                        <span class="growth-value positive" id="productGrowth">0%</span>
+                    </div>
+                    <div class="growth-item">
+                        <span>Basket Value Growth</span>
+                        <span class="growth-value positive" id="basketGrowth">0%</span>
+                    </div>
+                </div>
+            </div>
+        
+
+    <script>
+        // Global variables
+        let originalData = [];
+        let filteredData = [];
+        let currentBranch = 'all';
+        let startDate = null;
+        let endDate = null;
+        let previousPeriodData = [];
+        let fastMovingCount = 20;
+        let slowMovingCount = 20;
+        
+        // Chart instances
+        let fastMovingChart = null;
+        let slowMovingChart = null;
+        let cashiersChart = null;
+        let categoriesChart = null;
+        let salesTrendChart = null;
+        let paymentChart = null;
+        let customersChart = null;
+        
+        // DOM Elements
+        const fileInput = document.getElementById('fileInput');
+        const branchButtons = document.querySelectorAll('.branch-btn');
+        const applyDateButton = document.getElementById('applyDate');
+        const exportReportButton = document.getElementById('exportReport');
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
+        const loader = document.getElementById('loader');
+        const loaderText = document.getElementById('loaderText');
+        const loaderProgress = document.getElementById('loaderProgress');
+        const tabs = document.querySelectorAll('.tab');
+        const notification = document.getElementById('notification');
+        const dateDisplay = document.getElementById('dateDisplay');
+        const dateRangeText = document.getElementById('dateRangeText');
+        const fastMovingFilter = document.getElementById('fastMovingFilter');
+        const slowMovingFilter = document.getElementById('slowMovingFilter');
+        const applyFiltersButton = document.getElementById('applyFilters');
+        const resetFiltersButton = document.getElementById('resetFilters');
+        
+        // Set default date range to last 30 days
+        const today = new Date();
+        const lastMonth = new Date();
+        lastMonth.setDate(today.getDate() - 30);
+        
+        startDateInput.valueAsDate = lastMonth;
+        endDateInput.valueAsDate = today;
+        startDate = lastMonth;
+        endDate = today;
+        
+        // Show notification
+        function showNotification(title, message, type = 'success') {
+            const notificationTitle = document.getElementById('notificationTitle');
+            const notificationMessage = document.getElementById('notificationMessage');
+            const notificationIcon = notification.querySelector('i');
+            
+            notificationTitle.textContent = title;
+            notificationMessage.textContent = message;
+            
+            // Set icon based on type
+            if (type === 'success') {
+                notificationIcon.className = 'fas fa-check-circle';
+                notification.style.borderLeftColor = 'var(--secondary-color)';
+            } else if (type === 'error') {
+                notificationIcon.className = 'fas fa-exclamation-circle';
+                notification.style.borderLeftColor = 'var(--danger-color)';
+            } else if (type === 'warning') {
+                notificationIcon.className = 'fas fa-exclamation-triangle';
+                notification.style.borderLeftColor = 'var(--warning-color)';
+            } else if (type === 'info') {
+                notificationIcon.className = 'fas fa-info-circle';
+                notification.style.borderLeftColor = 'var(--primary-color)';
+            }
+            
+            notification.classList.add('show');
+            
+            // Auto hide after 5 seconds
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 5000);
+        }
+        
+        // Update loader progress
+        function updateLoaderProgress(percent, text) {
+            loaderProgress.style.width = percent + '%';
+            if (text) loaderText.textContent = text;
+        }
+        
+        // Initialize charts with empty data
+        function initializeCharts() {
+            // Fast Moving Products Chart
+            const fastMovingCtx = document.getElementById('fastMovingChart').getContext('2d');
+            fastMovingChart = new Chart(fastMovingCtx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Quantity Sold',
+                        data: [],
+                        backgroundColor: 'rgba(52, 152, 219, 0.8)',
+                        borderColor: 'rgba(52, 152, 219, 1)',
+                        borderWidth: 1,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        title: {
+                            display: true,
+                            text: 'Top Fast Moving Products',
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Quantity: ${context.raw}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Quantity Sold',
+                                font: {
+                                    weight: 'bold'
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Slow Moving Products Chart
+            const slowMovingCtx = document.getElementById('slowMovingChart').getContext('2d');
+            slowMovingChart = new Chart(slowMovingCtx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Quantity Sold',
+                        data: [],
+                        backgroundColor: 'rgba(231, 76, 60, 0.8)',
+                        borderColor: 'rgba(231, 76, 60, 1)',
+                        borderWidth: 1,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        title: {
+                            display: true,
+                            text: 'Top Slow Moving Products',
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Quantity Sold',
+                                font: {
+                                    weight: 'bold'
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Cashiers Chart
+            const cashiersCtx = document.getElementById('cashiersChart').getContext('2d');
+            cashiersChart = new Chart(cashiersCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Sales Value',
+                        data: [],
+                        backgroundColor: [
+                            'rgba(52, 152, 219, 0.8)',
+                            'rgba(46, 204, 113, 0.8)',
+                            'rgba(155, 89, 182, 0.8)',
+                            'rgba(241, 196, 15, 0.8)',
+                            'rgba(230, 126, 34, 0.8)',
+                            'rgba(231, 76, 60, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(52, 152, 219, 1)',
+                            'rgba(46, 204, 113, 1)',
+                            'rgba(155, 89, 182, 1)',
+                            'rgba(241, 196, 15, 1)',
+                            'rgba(230, 126, 34, 1)',
+                            'rgba(231, 76, 60, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'right',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Sales Distribution by Cashier',
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Categories Chart
+            const categoriesCtx = document.getElementById('categoriesChart').getContext('2d');
+            categoriesChart = new Chart(categoriesCtx, {
+                type: 'pie',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Sales Value',
+                        data: [],
+                        backgroundColor: [
+                            'rgba(52, 152, 219, 0.8)',
+                            'rgba(46, 204, 113, 0.8)',
+                            'rgba(155, 89, 182, 0.8)',
+                            'rgba(241, 196, 15, 0.8)',
+                            'rgba(230, 126, 34, 0.8)',
+                            'rgba(231, 76, 60, 0.8)',
+                            'rgba(149, 165, 166, 0.8)',
+                            'rgba(44, 62, 80, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(52, 152, 219, 1)',
+                            'rgba(46, 204, 113, 1)',
+                            'rgba(155, 89, 182, 1)',
+                            'rgba(241, 196, 15, 1)',
+                            'rgba(230, 126, 34, 1)',
+                            'rgba(231, 76, 60, 1)',
+                            'rgba(149, 165, 166, 1)',
+                            'rgba(44, 62, 80, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'right',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Sales Distribution by Category',
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Sales Trend Chart
+            const salesTrendCtx = document.getElementById('salesTrendChart').getContext('2d');
+            salesTrendChart = new Chart(salesTrendCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Daily Sales',
+                        data: [],
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        borderColor: 'rgba(52, 152, 219, 1)',
+                        borderWidth: 3,
+                        tension: 0.3,
+                        fill: true,
+                        pointBackgroundColor: 'rgba(52, 152, 219, 1)',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        title: {
+                            display: true,
+                            text: 'Sales Trend Over Time',
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Sales Value (KSh)',
+                                font: {
+                                    weight: 'bold'
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Date',
+                                font: {
+                                    weight: 'bold'
+                                }
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Payment Methods Chart
+            const paymentCtx = document.getElementById('paymentChart').getContext('2d');
+            paymentChart = new Chart(paymentCtx, {
+                type: 'polarArea',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Transactions',
+                        data: [],
+                        backgroundColor: [
+                            'rgba(52, 152, 219, 0.8)',
+                            'rgba(46, 204, 113, 0.8)',
+                            'rgba(155, 89, 182, 0.8)',
+                            'rgba(241, 196, 15, 0.8)',
+                            'rgba(230, 126, 34, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(52, 152, 219, 1)',
+                            'rgba(46, 204, 113, 1)',
+                            'rgba(155, 89, 182, 1)',
+                            'rgba(241, 196, 15, 1)',
+                            'rgba(230, 126, 34, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'right',
+                            labels: {
+                                padding: 20
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Payment Methods Distribution',
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            }
+                        }
+                    },
+                    scales: {
+                        r: {
+                            ticks: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Customers Chart
+            const customersCtx = document.getElementById('customersChart').getContext('2d');
+            customersChart = new Chart(customersCtx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Total Spent',
+                        data: [],
+                        backgroundColor: 'rgba(155, 89, 182, 0.8)',
+                        borderColor: 'rgba(155, 89, 182, 1)',
+                        borderWidth: 1,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        title: {
+                            display: true,
+                            text: 'Top 10 Customers by Spending',
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Amount Spent (KSh)',
+                                font: {
+                                    weight: 'bold'
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Initialize charts on page load
+        document.addEventListener('DOMContentLoaded', initializeCharts);
+        
+        // File upload handler
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            showLoader();
+            loaderText.textContent = 'Reading Excel file...';
+            updateLoaderProgress(10, 'Reading file...');
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    updateLoaderProgress(30, 'Processing data...');
+                    
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                    
+                    updateLoaderProgress(50, 'Converting data...');
+                    
+                    // Convert to array of objects with proper column mapping
+                    const headers = jsonData[0];
+                    originalData = [];
+                    
+                    // Process data in chunks for better performance with large files
+                    const chunkSize = 1000;
+                    for (let i = 1; i < jsonData.length; i += chunkSize) {
+                        const chunk = jsonData.slice(i, i + chunkSize);
+                        chunk.forEach(row => {
+                            const obj = {};
+                            headers.forEach((header, index) => {
+                                obj[header] = row[index];
+                            });
+                            
+                            // Ensure amount is a valid number
+                            if (obj.amount) {
+                                obj.amount = parseFloat(obj.amount) || 0;
+                            } else {
+                                obj.amount = 0;
+                            }
+                            
+                            // Ensure quantity is a valid number
+                            if (obj.qty) {
+                                obj.qty = parseFloat(obj.qty) || 0;
+                            } else {
+                                obj.qty = 0;
+                            }
+                            
+                            // Parse date
+                            if (obj.date) {
+                                const dateStr = obj.date.toString();
+                                // Handle various date formats
+                                if (dateStr.includes('/')) {
+                                    const parts = dateStr.split(' ')[0].split('/');
+                                    if (parts.length === 3) {
+                                        const day = parseInt(parts[0]);
+                                        const month = parseInt(parts[1]) - 1;
+                                        const year = parseInt(parts[2]);
+                                        obj.parsedDate = new Date(year, month, day);
+                                    }
+                                } else if (dateStr.includes('-')) {
+                                    obj.parsedDate = new Date(dateStr);
+                                } else {
+                                    obj.parsedDate = new Date(obj.date);
+                                }
+                                
+                                // If date parsing failed, use current date
+                                if (isNaN(obj.parsedDate.getTime())) {
+                                    obj.parsedDate = new Date();
+                                }
+                            } else {
+                                obj.parsedDate = new Date();
+                            }
+                            
+                            originalData.push(obj);
+                        });
+                        
+                        updateLoaderProgress(50 + (i / jsonData.length * 40), 'Processing data...');
+                    }
+                    
+                    updateLoaderProgress(95, 'Finalizing...');
+                    
+                    // Filter only Pharmacy POS and Katani Pharmacy service points
+                    originalData = originalData.filter(item => {
+                        const servicePoint = item.service_point || item.service_point || '';
+                        return servicePoint.includes('Pharmacy POS') || servicePoint.includes('Katani Pharmacy');
+                    });
+                    
+                    // Calculate date range for display
+                    if (originalData.length > 0) {
+                        const dates = originalData.map(item => item.parsedDate).filter(d => d);
+                        const minDate = new Date(Math.min(...dates.map(d => d.getTime())));
+                        const maxDate = new Date(Math.max(...dates.map(d => d.getTime())));
+                        
+                        // Update date display
+                        dateDisplay.classList.add('active');
+                        dateRangeText.textContent = `${formatDate(minDate)} to ${formatDate(maxDate)}`;
+                        
+                        // Update date inputs
+                        startDateInput.valueAsDate = minDate;
+                        endDateInput.valueAsDate = maxDate;
+                        startDate = minDate;
+                        endDate = maxDate;
+                    }
+                    
+                    // Calculate previous period data for growth rate
+                    calculatePreviousPeriodData();
+                    
+                    // Apply initial filter and update UI
+                    filterData();
+                    updateDashboard();
+                    
+                    hideLoader();
+                    showNotification('Data Loaded', `Successfully loaded ${originalData.length} records`, 'success');
+                    
+                } catch (error) {
+                    console.error('Error processing file:', error);
+                    hideLoader();
+                    showNotification('Error', 'Error processing the Excel file. Please check the format.', 'error');
+                }
+            };
+            
+            reader.onerror = function() {
+                hideLoader();
+                showNotification('Error', 'Error reading the file. Please try again.', 'error');
+            };
+            
+            reader.readAsArrayBuffer(file);
+        });
+        
+        // Branch filter handler
+        branchButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                branchButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                currentBranch = this.getAttribute('data-branch');
+                filterData();
+                updateDashboard();
+            });
+        });
+        
+        // Date filter handler
+        applyDateButton.addEventListener('click', function() {
+            startDate = startDateInput.value ? new Date(startDateInput.value) : null;
+            endDate = endDateInput.value ? new Date(endDateInput.value) : null;
+            
+            if (startDate && endDate && startDate > endDate) {
+                showNotification('Warning', 'Start date cannot be after end date.', 'warning');
+                return;
+            }
+            
+            filterData();
+            updateDashboard();
+            showNotification('Filter Applied', 'Date filter has been applied successfully.', 'info');
+        });
+        
+        // Tab switching handler
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                const tabId = this.getAttribute('data-tab');
+                
+                tabs.forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+        
+        // Apply filter button handler
+        applyFiltersButton.addEventListener('click', function() {
+            fastMovingCount = parseInt(fastMovingFilter.value) || 20;
+            slowMovingCount = parseInt(slowMovingFilter.value) || 20;
+            
+            if (fastMovingCount < 1) fastMovingCount = 1;
+            if (slowMovingCount < 1) slowMovingCount = 1;
+            if (fastMovingCount > 1000) fastMovingCount = 1000;
+            if (slowMovingCount > 1000) slowMovingCount = 1000;
+            
+            fastMovingFilter.value = fastMovingCount;
+            slowMovingFilter.value = slowMovingCount;
+            
+            // Update dashboard with new filter counts
+            updateFastMovingProducts();
+            updateSlowMovingProducts();
+            
+            showNotification('Filters Applied', `Showing ${fastMovingCount} fast moving and ${slowMovingCount} slow moving products`, 'info');
+        });
+        
+        // Reset filters button handler
+        resetFiltersButton.addEventListener('click', function() {
+            fastMovingCount = 20;
+            slowMovingCount = 20;
+            fastMovingFilter.value = fastMovingCount;
+            slowMovingFilter.value = slowMovingCount;
+            
+            // Update dashboard with default filter counts
+            updateFastMovingProducts();
+            updateSlowMovingProducts();
+            
+            showNotification('Filters Reset', 'Reset to default values (20 products each)', 'info');
+        });
+        
+        // Export report handler
+        exportReportButton.addEventListener('click', function() {
+            if (filteredData.length === 0) {
+                showNotification('Warning', 'No data to export. Please upload a file first.', 'warning');
+                return;
+            }
+            
+            showLoader();
+            loaderText.textContent = 'Generating export report...';
+            updateLoaderProgress(10, 'Preparing data...');
+            
+            try {
+                // Create a new workbook
+                const wb = XLSX.utils.book_new();
+                
+                // Helper function to create a worksheet from data
+                function createWorksheet(data, sheetName) {
+                    const ws = XLSX.utils.json_to_sheet(data);
+                    
+                    // Auto-size columns
+                    const wscols = [];
+                    const headers = Object.keys(data[0] || {});
+                    headers.forEach(() => {
+                        wscols.push({ wch: 20 });
+                    });
+                    ws['!cols'] = wscols;
+                    
+                    return ws;
+                }
+                
+                // 1. Summary sheet
+                updateLoaderProgress(20, 'Creating summary sheet...');
+                const summaryData = [{
+                    'Total Sales': formatCurrencyNumber(filteredData.reduce((sum, item) => sum + (item.amount || 0), 0)),
+                    'Total Clients': [...new Set(filteredData.map(item => item.invoice_no))].length,
+                    'Total Products Sold': filteredData.reduce((sum, item) => sum + (item.qty || 0), 0),
+                    'Average Basket Value': formatCurrencyNumber(calculateAverageBasketValue()),
+                    'Date Range': dateRangeText.textContent,
+                    'Branch Filter': currentBranch === 'all' ? 'All Branches' : currentBranch,
+                    'Fast Moving Filter': fastMovingCount,
+                    'Slow Moving Filter': slowMovingCount
+                }];
+                XLSX.utils.book_append_sheet(wb, createWorksheet(summaryData, "Summary"), "Summary");
+                
+                // 2. Fast Moving Products
+                updateLoaderProgress(30, 'Creating fast moving products sheet...');
+                const fastMoving = getFastMovingProducts();
+                const fastMovingForExport = fastMoving.map(item => ({
+                    ...item,
+                    'Quantity Sold': item['Quantity Sold'],
+                    'Sales Value': formatCurrencyNumber(item['Sales Value'])
+                }));
+                XLSX.utils.book_append_sheet(wb, createWorksheet(fastMovingForExport, "Fast Moving"), "Fast Moving");
+                
+                // 3. Slow Moving Products
+                updateLoaderProgress(40, 'Creating slow moving products sheet...');
+                const slowMoving = getSlowMovingProducts();
+                const slowMovingForExport = slowMoving.map(item => ({
+                    ...item,
+                    'Quantity Sold': item['Quantity Sold'],
+                    'Sales Value': formatCurrencyNumber(item['Sales Value'])
+                }));
+                XLSX.utils.book_append_sheet(wb, createWorksheet(slowMovingForExport, "Slow Moving"), "Slow Moving");
+                
+                // 4. Cashiers Report
+                updateLoaderProgress(50, 'Creating cashiers report...');
+                const cashiersReport = getCashiersReport();
+                const cashiersForExport = cashiersReport.map(item => ({
+                    ...item,
+                    'Total Sales': formatCurrencyNumber(item['Total Sales']),
+                    'Avg Basket Value': formatCurrencyNumber(item['Avg Basket Value'])
+                }));
+                XLSX.utils.book_append_sheet(wb, createWorksheet(cashiersForExport, "Cashiers"), "Cashiers");
+                
+                // 5. Categories Report
+                updateLoaderProgress(60, 'Creating categories report...');
+                const categoriesReport = getCategoriesReport();
+                const categoriesForExport = categoriesReport.map(item => ({
+                    ...item,
+                    'Sales Value': formatCurrencyNumber(item['Sales Value']),
+                    '% of Total': item['% of Total'].toFixed(2) + '%'
+                }));
+                XLSX.utils.book_append_sheet(wb, createWorksheet(categoriesForExport, "Categories"), "Categories");
+                
+                // 6. Customers Report
+                updateLoaderProgress(70, 'Creating customers report...');
+                const customersReport = getCustomersReport();
+                const customersForExport = customersReport.map(item => ({
+                    ...item,
+                    'Total Spent': formatCurrencyNumber(item['Total Spent']),
+                    'Avg Spend': formatCurrencyNumber(item['Avg Spend'])
+                }));
+                XLSX.utils.book_append_sheet(wb, createWorksheet(customersForExport, "Customers"), "Customers");
+                
+                // 7. Growth Rate Analysis
+                updateLoaderProgress(80, 'Creating growth analysis...');
+                const growthData = calculateGrowthRates();
+                XLSX.utils.book_append_sheet(wb, createWorksheet(growthData, "Growth Analysis"), "Growth Analysis");
+                
+                // 8. Raw Data (without unnecessary columns)
+                updateLoaderProgress(90, 'Creating raw data sheet...');
+                const rawData = filteredData.map(item => {
+                    const { parent_category, tax_category, payment_mode, parsedDate, ...cleanItem } = item;
+                    return cleanItem;
+                });
+                XLSX.utils.book_append_sheet(wb, createWorksheet(rawData, "Raw Data"), "Raw Data");
+                
+                // Generate filename with date
+                const today = new Date();
+                const filename = `pharmacy_report_${today.getFullYear()}-${today.getMonth()+1}-${today.getDate()}_fast${fastMovingCount}_slow${slowMovingCount}.xlsx`;
+                
+                // Save the file
+                updateLoaderProgress(100, 'Saving file...');
+                setTimeout(() => {
+                    XLSX.writeFile(wb, filename);
+                    hideLoader();
+                    showNotification('Export Successful', `Report saved as ${filename}`, 'success');
+                }, 500);
+                
+            } catch (error) {
+                console.error('Error exporting report:', error);
+                hideLoader();
+                showNotification('Error', 'Failed to export report. Please try again.', 'error');
+            }
+        });
+        
+        // Filter data based on branch and date range
+        function filterData() {
+            filteredData = originalData.filter(item => {
+                // Filter by branch
+                if (currentBranch !== 'all') {
+                    const servicePoint = item.service_point || '';
+                    if (currentBranch === 'Pharmacy POS' && !servicePoint.includes('Pharmacy POS')) {
+                        return false;
+                    }
+                    if (currentBranch === 'Katani Pharmacy' && !servicePoint.includes('Katani Pharmacy')) {
+                        return false;
+                    }
+                }
+                
+                // Filter by date range
+                if (startDate && endDate && item.parsedDate) {
+                    const itemDate = item.parsedDate;
+                    // Set time to beginning and end of day for accurate comparison
+                    const start = new Date(startDate);
+                    start.setHours(0, 0, 0, 0);
+                    
+                    const end = new Date(endDate);
+                    end.setHours(23, 59, 59, 999);
+                    
+                    if (itemDate < start || itemDate > end) {
+                        return false;
+                    }
+                }
+                
+                return true;
+            });
+        }
+        
+        // Calculate previous period data for growth rate - FIXED VERSION
+        function calculatePreviousPeriodData() {
+            if (!startDate || !endDate || originalData.length === 0) return;
+            
+            // Calculate previous period (same duration as current period)
+            const periodLength = endDate.getTime() - startDate.getTime();
+            const previousEndDate = new Date(startDate.getTime() - 1); // One day before start date
+            const previousStartDate = new Date(previousEndDate.getTime() - periodLength);
+            
+            previousPeriodData = originalData.filter(item => {
+                if (!item.parsedDate) return false;
+                
+                const itemDate = item.parsedDate;
+                return itemDate >= previousStartDate && itemDate <= previousEndDate;
+            });
+            
+            // Debug log
+            console.log('Current period:', startDate, 'to', endDate, 'days:', (periodLength / (1000 * 60 * 60 * 24)).toFixed(0));
+            console.log('Previous period:', previousStartDate, 'to', previousEndDate);
+            console.log('Current data count:', filteredData.length);
+            console.log('Previous data count:', previousPeriodData.length);
+        }
+        
+        // Update all dashboard components
+        function updateDashboard() {
+            if (filteredData.length === 0) {
+                resetDashboard();
+                return;
+            }
+            
+            updateSummaryCards();
+            updateFastMovingProducts();
+            updateSlowMovingProducts();
+            updateCashiersReport();
+            updateCategoriesReport();
+            updateCustomersReport();
+            updateSalesTrend();
+            updatePaymentMethods();
+            updateGrowthRates();
+        }
+        
+        // Reset dashboard when no data
+        function resetDashboard() {
+            document.getElementById('totalSales').textContent = 'KSh 0';
+            document.getElementById('clientsCount').textContent = '0';
+            document.getElementById('basketValue').textContent = 'KSh 0';
+            document.getElementById('productsCount').textContent = '0';
+            
+            // Reset change indicators
+            document.querySelectorAll('.card-change').forEach(el => {
+                el.innerHTML = '<i class="fas fa-minus"></i> 0%';
+                el.className = 'card-change';
+            });
+            
+            // Clear tables
+            const emptyStates = {
+                'fastMovingBody': 'Upload an Excel file to see fast moving products analysis',
+                'slowMovingBody': 'Upload an Excel file to see slow moving products analysis',
+                'cashiersBody': 'Upload an Excel file to see cashiers performance report',
+                'categoriesBody': 'Upload an Excel file to see categories analysis',
+                'customersBody': 'Upload an Excel file to see top customers report'
+            };
+            
+            for (const [id, message] of Object.entries(emptyStates)) {
+                document.getElementById(id).innerHTML = `
+                    <tr>
+                        <td colspan="4" class="empty-state">
+                            <i class="fas fa-chart-bar"></i>
+                            <h3>No Data Available</h3>
+                            <p>${message}</p>
+                        </td>
+                    </tr>`;
+            }
+            
+            // Reset summary stats
+            document.querySelectorAll('.stat-value').forEach(el => {
+                el.textContent = el.id.includes('Value') ? 'KSh 0' : '0';
+            });
+            
+            // Clear charts
+            [fastMovingChart, slowMovingChart, cashiersChart, categoriesChart, 
+             salesTrendChart, paymentChart, customersChart].forEach(chart => {
+                if (chart) {
+                    chart.data.labels = [];
+                    chart.data.datasets.forEach(dataset => {
+                        dataset.data = [];
+                    });
+                    chart.update();
+                }
+            });
+            
+            // Hide date display
+            dateDisplay.classList.remove('active');
+        }
+        
+        // Update summary cards
+        function updateSummaryCards() {
+            // Calculate total sales
+            const totalSales = filteredData.reduce((sum, item) => sum + (item.amount || 0), 0);
+            
+            // Calculate number of unique clients (invoice_no)
+            const uniqueInvoices = [...new Set(filteredData.map(item => item.invoice_no))];
+            
+            // Calculate total quantity sold
+            const totalQty = filteredData.reduce((sum, item) => sum + (item.qty || 0), 0);
+            
+            // Calculate average basket value
+            const avgBasketValue = calculateAverageBasketValue();
+            
+            // Calculate growth rates
+            const salesGrowth = calculateGrowthRate('sales');
+            const clientsGrowth = calculateGrowthRate('clients');
+            const basketGrowth = calculateGrowthRate('basket');
+            const productsGrowth = calculateGrowthRate('products');
+            
+            // Update UI
+            document.getElementById('totalSales').textContent = formatCurrency(totalSales);
+            document.getElementById('clientsCount').textContent = uniqueInvoices.length.toLocaleString();
+            document.getElementById('basketValue').textContent = formatCurrency(avgBasketValue);
+            document.getElementById('productsCount').textContent = totalQty.toLocaleString();
+            
+            // Update change indicators
+            updateChangeIndicator('salesChange', salesGrowth);
+            updateChangeIndicator('clientsChange', clientsGrowth);
+            updateChangeIndicator('basketChange', basketGrowth);
+            updateChangeIndicator('productsChange', productsGrowth);
+        }
+        
+        // Update change indicator with proper styling
+        function updateChangeIndicator(elementId, growthRate) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            
+            const isPositive = growthRate >= 0;
+            const arrow = isPositive ? 'fa-arrow-up' : 'fa-arrow-down';
+            const className = isPositive ? 'positive' : 'negative';
+            
+            element.innerHTML = `<i class="fas ${arrow}"></i> ${Math.abs(growthRate).toFixed(1)}%`;
+            element.className = `card-change ${className}`;
+        }
+        
+        // Calculate average basket value
+        function calculateAverageBasketValue(data = filteredData) {
+            const invoiceTotals = {};
+            data.forEach(item => {
+                const invoice = item.invoice_no;
+                const amount = item.amount || 0;
+                if (!invoiceTotals[invoice]) {
+                    invoiceTotals[invoice] = 0;
+                }
+                invoiceTotals[invoice] += amount;
+            });
+            
+            const totalInvoices = Object.keys(invoiceTotals).length;
+            const totalAmount = Object.values(invoiceTotals).reduce((sum, val) => sum + val, 0);
+            
+            return totalInvoices > 0 ? totalAmount / totalInvoices : 0;
+        }
+        
+        // Calculate growth rate for a specific metric - FIXED VERSION
+        function calculateGrowthRate(metric) {
+            if (previousPeriodData.length === 0) {
+                console.log(`No previous period data for ${metric} growth calculation`);
+                return 0;
+            }
+            
+            let currentValue, previousValue;
+            
+            switch (metric) {
+                case 'sales':
+                    currentValue = filteredData.reduce((sum, item) => sum + (item.amount || 0), 0);
+                    previousValue = previousPeriodData.reduce((sum, item) => sum + (item.amount || 0), 0);
+                    break;
+                case 'clients':
+                    currentValue = [...new Set(filteredData.map(item => item.invoice_no))].length;
+                    previousValue = [...new Set(previousPeriodData.map(item => item.invoice_no))].length;
+                    break;
+                case 'basket':
+                    currentValue = calculateAverageBasketValue(filteredData);
+                    previousValue = calculateAverageBasketValue(previousPeriodData);
+                    break;
+                case 'products':
+                    currentValue = filteredData.reduce((sum, item) => sum + (item.qty || 0), 0);
+                    previousValue = previousPeriodData.reduce((sum, item) => sum + (item.qty || 0), 0);
+                    break;
+                default:
+                    return 0;
+            }
+            
+            console.log(`${metric}: Current=${currentValue}, Previous=${previousValue}`);
+            
+            if (previousValue === 0) {
+                return currentValue > 0 ? 100 : 0;
+            }
+            
+            const growthRate = ((currentValue - previousValue) / previousValue) * 100;
+            console.log(`${metric} growth rate: ${growthRate.toFixed(2)}%`);
+            
+            return growthRate;
+        }
+        
+        // Update fast moving products report
+        function updateFastMovingProducts() {
+            const fastMoving = getFastMovingProducts();
+            
+            // Update tab badge
+            document.getElementById('fastMovingBadge').textContent = Math.min(fastMoving.length, fastMovingCount);
+            
+            // Update table
+            const tableBody = document.getElementById('fastMovingBody');
+            tableBody.innerHTML = '';
+            
+            if (fastMoving.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="empty-state">
+                            <i class="fas fa-chart-bar"></i>
+                            <h3>No Data Available</h3>
+                            <p>No fast moving products found</p>
+                        </td>
+                    </tr>`;
+            } else {
+                fastMoving.forEach((item, index) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>
+                            <span class="product-badge badge-fast">#${index + 1}</span>
+                            ${item.Product}
+                        </td>
+                        <td>${item['Quantity Sold'].toLocaleString()}</td>
+                        <td>${formatCurrency(item['Sales Value'])}</td>
+                        <td>${item.Category || 'N/A'}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            }
+            
+            // Update summary stats
+            document.getElementById('fastMovingTotal').textContent = Math.min(fastMoving.length, fastMovingCount);
+            const totalQty = fastMoving.slice(0, fastMovingCount).reduce((sum, item) => sum + item['Quantity Sold'], 0);
+            const totalValue = fastMoving.slice(0, fastMovingCount).reduce((sum, item) => sum + item['Sales Value'], 0);
+            document.getElementById('fastMovingQty').textContent = totalQty.toLocaleString();
+            document.getElementById('fastMovingValue').textContent = formatCurrency(totalValue);
+            
+            // Update chart
+            const displayData = fastMoving.slice(0, Math.min(fastMovingCount, 15)); // Limit to 15 for chart readability
+            fastMovingChart.data.labels = displayData.map(item => 
+                item.Product.length > 20 ? item.Product.substring(0, 20) + '...' : item.Product
+            );
+            fastMovingChart.data.datasets[0].data = displayData.map(item => item['Quantity Sold']);
+            fastMovingChart.options.plugins.title.text = `Top ${fastMovingCount} Fast Moving Products`;
+            fastMovingChart.update();
+        }
+        
+        // Get fast moving products data
+        function getFastMovingProducts() {
+            const productSales = {};
+            
+            filteredData.forEach(item => {
+                const product = item.product || 'Unknown';
+                const qty = item.qty || 0;
+                const amount = item.amount || 0;
+                const category = item.category || 'Unknown';
+                
+                if (!productSales[product]) {
+                    productSales[product] = {
+                        qty: 0,
+                        amount: 0,
+                        category: category
+                    };
+                }
+                
+                productSales[product].qty += qty;
+                productSales[product].amount += amount;
+            });
+            
+            // Convert to array and sort by quantity (descending)
+            return Object.entries(productSales)
+                .map(([product, data]) => ({
+                    'Product': product,
+                    'Quantity Sold': data.qty,
+                    'Sales Value': data.amount,
+                    'Category': data.category
+                }))
+                .filter(item => item['Quantity Sold'] > 0) // Only include products that have been sold
+                .sort((a, b) => b['Quantity Sold'] - a['Quantity Sold'])
+                .slice(0, fastMovingCount); // Use the filter count
+        }
+        
+        // Update slow moving products report
+        function updateSlowMovingProducts() {
+            const slowMoving = getSlowMovingProducts();
+            
+            // Update tab badge
+            document.getElementById('slowMovingBadge').textContent = Math.min(slowMoving.length, slowMovingCount);
+            
+            // Update table
+            const tableBody = document.getElementById('slowMovingBody');
+            tableBody.innerHTML = '';
+            
+            if (slowMoving.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="empty-state">
+                            <i class="fas fa-chart-bar"></i>
+                            <h3>No Data Available</h3>
+                            <p>No slow moving products found</p>
+                        </td>
+                    </tr>`;
+            } else {
+                slowMoving.forEach((item, index) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>
+                            <span class="product-badge badge-slow">#${index + 1}</span>
+                            ${item.Product}
+                        </td>
+                        <td>${item['Quantity Sold'].toLocaleString()}</td>
+                        <td>${formatCurrency(item['Sales Value'])}</td>
+                        <td>${item.Category || 'N/A'}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            }
+            
+            // Update summary stats
+            document.getElementById('slowMovingTotal').textContent = Math.min(slowMoving.length, slowMovingCount);
+            const totalQty = slowMoving.slice(0, slowMovingCount).reduce((sum, item) => sum + item['Quantity Sold'], 0);
+            const totalValue = slowMoving.slice(0, slowMovingCount).reduce((sum, item) => sum + item['Sales Value'], 0);
+            document.getElementById('slowMovingQty').textContent = totalQty.toLocaleString();
+            document.getElementById('slowMovingValue').textContent = formatCurrency(totalValue);
+            
+            // Update chart
+            const displayData = slowMoving.slice(0, Math.min(slowMovingCount, 15)); // Limit to 15 for chart readability
+            slowMovingChart.data.labels = displayData.map(item => 
+                item.Product.length > 20 ? item.Product.substring(0, 20) + '...' : item.Product
+            );
+            slowMovingChart.data.datasets[0].data = displayData.map(item => item['Quantity Sold']);
+            slowMovingChart.options.plugins.title.text = `Top ${slowMovingCount} Slow Moving Products`;
+            slowMovingChart.update();
+        }
+        
+        // Get slow moving products data
+        function getSlowMovingProducts() {
+            const productSales = {};
+            
+            filteredData.forEach(item => {
+                const product = item.product || 'Unknown';
+                const qty = item.qty || 0;
+                const amount = item.amount || 0;
+                const category = item.category || 'Unknown';
+                
+                if (!productSales[product]) {
+                    productSales[product] = {
+                        qty: 0,
+                        amount: 0,
+                        category: category
+                    };
+                }
+                
+                productSales[product].qty += qty;
+                productSales[product].amount += amount;
+            });
+            
+            // Convert to array, filter products with sales, and sort by quantity (ascending)
+            return Object.entries(productSales)
+                .map(([product, data]) => ({
+                    'Product': product,
+                    'Quantity Sold': data.qty,
+                    'Sales Value': data.amount,
+                    'Category': data.category
+                }))
+                .filter(item => item['Quantity Sold'] > 0) // Only include products that have been sold
+                .sort((a, b) => a['Quantity Sold'] - b['Quantity Sold']) // Sort by quantity ascending
+                .slice(0, slowMovingCount); // Use the filter count
+        }
+        
+        // Update cashiers report
+        function updateCashiersReport() {
+            const cashiersReport = getCashiersReport();
+            
+            // Update table
+            const tableBody = document.getElementById('cashiersBody');
+            tableBody.innerHTML = '';
+            
+            cashiersReport.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.Cashier}</td>
+                    <td>${item.Transactions.toLocaleString()}</td>
+                    <td>${formatCurrency(item['Total Sales'])}</td>
+                    <td>${formatCurrency(item['Avg Basket Value'])}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            // Update chart (top 6 cashiers)
+            const topCashiers = cashiersReport.slice(0, 6);
+            cashiersChart.data.labels = topCashiers.map(item => item.Cashier);
+            cashiersChart.data.datasets[0].data = topCashiers.map(item => item['Total Sales']);
+            cashiersChart.update();
+        }
+        
+        // Get cashiers report data
+        function getCashiersReport() {
+            const cashierSales = {};
+            
+            filteredData.forEach(item => {
+                const cashier = item.user || 'Unknown';
+                const amount = item.amount || 0;
+                
+                if (!cashierSales[cashier]) {
+                    cashierSales[cashier] = {
+                        transactions: 0,
+                        amount: 0,
+                        invoiceCounts: new Set()
+                    };
+                }
+                
+                cashierSales[cashier].transactions += 1;
+                cashierSales[cashier].amount += amount;
+                cashierSales[cashier].invoiceCounts.add(item.invoice_no);
+            });
+            
+            // Convert to array and calculate avg basket value
+            return Object.entries(cashierSales)
+                .map(([cashier, data]) => {
+                    const avgBasket = data.invoiceCounts.size > 0 ? data.amount / data.invoiceCounts.size : 0;
+                    return {
+                        'Cashier': cashier,
+                        'Transactions': data.transactions,
+                        'Total Sales': data.amount,
+                        'Avg Basket Value': avgBasket
+                    };
+                })
+                .sort((a, b) => b['Total Sales'] - a['Total Sales']);
+        }
+        
+        // Update categories report
+        function updateCategoriesReport() {
+            const categoriesReport = getCategoriesReport();
+            
+            // Update table
+            const tableBody = document.getElementById('categoriesBody');
+            tableBody.innerHTML = '';
+            
+            const totalSales = filteredData.reduce((sum, item) => sum + (item.amount || 0), 0);
+            
+            categoriesReport.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.Category}</td>
+                    <td>${item['Products Sold'].toLocaleString()}</td>
+                    <td>${formatCurrency(item['Sales Value'])}</td>
+                    <td>${item['% of Total'].toFixed(1)}%</td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            // Update chart (top 8 categories)
+            const topCategories = categoriesReport.slice(0, 8);
+            categoriesChart.data.labels = topCategories.map(item => item.Category);
+            categoriesChart.data.datasets[0].data = topCategories.map(item => item['Sales Value']);
+            categoriesChart.update();
+        }
+        
+        // Get categories report data
+        function getCategoriesReport() {
+            const categorySales = {};
+            let totalSales = 0;
+            
+            filteredData.forEach(item => {
+                const category = item.category || 'Unknown';
+                const amount = item.amount || 0;
+                const qty = item.qty || 0;
+                
+                if (!categorySales[category]) {
+                    categorySales[category] = {
+                        amount: 0,
+                        qty: 0
+                    };
+                }
+                
+                categorySales[category].amount += amount;
+                categorySales[category].qty += qty;
+                totalSales += amount;
+            });
+            
+            // Convert to array and calculate percentage
+            return Object.entries(categorySales)
+                .map(([category, data]) => {
+                    const percentage = totalSales > 0 ? (data.amount / totalSales * 100) : 0;
+                    return {
+                        'Category': category,
+                        'Products Sold': data.qty,
+                        'Sales Value': data.amount,
+                        '% of Total': percentage
+                    };
+                })
+                .sort((a, b) => b['Sales Value'] - a['Sales Value']);
+        }
+        
+        // Update customers report
+        function updateCustomersReport() {
+            const customersReport = getCustomersReport();
+            
+            // Update table
+            const tableBody = document.getElementById('customersBody');
+            tableBody.innerHTML = '';
+            
+            customersReport.forEach((item, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.Customer}</td>
+                    <td>${item.Visits}</td>
+                    <td>${formatCurrency(item['Total Spent'])}</td>
+                    <td>${formatCurrency(item['Avg Spend'])}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            // Update chart
+            customersChart.data.labels = customersReport.slice(0, 10).map(item => item.Customer);
+            customersChart.data.datasets[0].data = customersReport.slice(0, 10).map(item => item['Total Spent']);
+            customersChart.update();
+        }
+        
+        // Get customers report data
+        function getCustomersReport() {
+            const customerData = {};
+            
+            // Group by customer name
+            filteredData.forEach(item => {
+                const customer = item.customer_name || 'Unknown';
+                const amount = item.amount || 0;
+                const invoice = item.invoice_no || '';
+                
+                if (!customerData[customer]) {
+                    customerData[customer] = {
+                        total: 0,
+                        invoices: new Set()
+                    };
+                }
+                
+                customerData[customer].total += amount;
+                customerData[customer].invoices.add(invoice);
+            });
+            
+            // Convert to array
+            return Object.entries(customerData)
+                .map(([customer, data]) => ({
+                    'Customer': customer,
+                    'Visits': data.invoices.size,
+                    'Total Spent': data.total,
+                    'Avg Spend': data.invoices.size > 0 ? data.total / data.invoices.size : 0
+                }))
+                .sort((a, b) => b['Total Spent'] - a['Total Spent'])
+                .slice(0, 20);
+        }
+        
+        // Update sales trend chart
+        function updateSalesTrend() {
+            // Group sales by day
+            const dailySales = {};
+            
+            filteredData.forEach(item => {
+                if (!item.parsedDate) return;
+                
+                const dateKey = item.parsedDate.toISOString().split('T')[0];
+                const amount = item.amount || 0;
+                
+                if (!dailySales[dateKey]) {
+                    dailySales[dateKey] = 0;
+                }
+                
+                dailySales[dateKey] += amount;
+            });
+            
+            // Sort by date
+            const sortedDates = Object.keys(dailySales).sort();
+            
+            // Get last 30 days or available dates
+            const displayDates = sortedDates.slice(-30);
+            const displaySales = displayDates.map(date => dailySales[date]);
+            
+            // Update chart
+            salesTrendChart.data.labels = displayDates.map(date => formatDateForDisplay(new Date(date)));
+            salesTrendChart.data.datasets[0].data = displaySales;
+            salesTrendChart.update();
+        }
+        
+        // Update payment methods chart
+        function updatePaymentMethods() {
+            // Group by payment mode
+            const paymentMethods = {};
+            
+            filteredData.forEach(item => {
+                const paymentMode = item.payment_mode || 'Unknown';
+                
+                if (!paymentMethods[paymentMode]) {
+                    paymentMethods[paymentMode] = 0;
+                }
+                
+                paymentMethods[paymentMode] += 1;
+            });
+            
+            // Convert to array
+            const paymentArray = Object.entries(paymentMethods)
+                .map(([method, count]) => ({
+                    method,
+                    count
+                }))
+                .sort((a, b) => b.count - a.count);
+            
+            // Update chart
+            paymentChart.data.labels = paymentArray.map(item => item.method);
+            paymentChart.data.datasets[0].data = paymentArray.map(item => item.count);
+            paymentChart.update();
+        }
+        
+        // Update growth rates
+        function updateGrowthRates() {
+            const salesGrowth = calculateGrowthRate('sales');
+            const clientsGrowth = calculateGrowthRate('clients');
+            const productsGrowth = calculateGrowthRate('products');
+            const basketGrowth = calculateGrowthRate('basket');
+            
+            document.getElementById('salesGrowth').textContent = `${salesGrowth.toFixed(1)}%`;
+            document.getElementById('clientGrowth').textContent = `${clientsGrowth.toFixed(1)}%`;
+            document.getElementById('productGrowth').textContent = `${productsGrowth.toFixed(1)}%`;
+            document.getElementById('basketGrowth').textContent = `${basketGrowth.toFixed(1)}%`;
+            
+            // Update growth indicator colors
+            updateGrowthIndicator('salesGrowth', salesGrowth);
+            updateGrowthIndicator('clientGrowth', clientsGrowth);
+            updateGrowthIndicator('productGrowth', productsGrowth);
+            updateGrowthIndicator('basketGrowth', basketGrowth);
+        }
+        
+        // Update growth indicator color
+        function updateGrowthIndicator(elementId, growthRate) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            
+            if (growthRate >= 0) {
+                element.className = 'growth-value positive';
+            } else {
+                element.className = 'growth-value negative';
+            }
+        }
+        
+        // Get growth rates data for export
+        function calculateGrowthRates() {
+            return [
+                {
+                    'Metric': 'Sales Growth',
+                    'Current Period': formatCurrencyNumber(filteredData.reduce((sum, item) => sum + (item.amount || 0), 0)),
+                    'Previous Period': formatCurrencyNumber(previousPeriodData.reduce((sum, item) => sum + (item.amount || 0), 0)),
+                    'Growth Rate': `${calculateGrowthRate('sales').toFixed(1)}%`
+                },
+                {
+                    'Metric': 'Client Growth',
+                    'Current Period': [...new Set(filteredData.map(item => item.invoice_no))].length,
+                    'Previous Period': [...new Set(previousPeriodData.map(item => item.invoice_no))].length,
+                    'Growth Rate': `${calculateGrowthRate('clients').toFixed(1)}%`
+                },
+                {
+                    'Metric': 'Product Growth',
+                    'Current Period': filteredData.reduce((sum, item) => sum + (item.qty || 0), 0),
+                    'Previous Period': previousPeriodData.reduce((sum, item) => sum + (item.qty || 0), 0),
+                    'Growth Rate': `${calculateGrowthRate('products').toFixed(1)}%`
+                },
+                {
+                    'Metric': 'Basket Value Growth',
+                    'Current Period': formatCurrencyNumber(calculateAverageBasketValue(filteredData)),
+                    'Previous Period': formatCurrencyNumber(calculateAverageBasketValue(previousPeriodData)),
+                    'Growth Rate': `${calculateGrowthRate('basket').toFixed(1)}%`
+                }
+            ];
+        }
+        
+        // Helper function to format currency
+        function formatCurrency(amount) {
+            return 'KSh ' + amount.toLocaleString('en-KE', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+        
+        // Helper function to format currency as number (for export)
+        function formatCurrencyNumber(amount) {
+            return amount.toLocaleString('en-KE', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+        
+        // Helper function to format date for display
+        function formatDateForDisplay(date) {
+            return date.toLocaleDateString('en-KE', {
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+        
+        // Helper function to format date
+        function formatDate(date) {
+            return date.toLocaleDateString('en-KE', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+        
+        // Show loader
+        function showLoader() {
+            loader.classList.add('active');
+        }
+        
+        // Hide loader
+        function hideLoader() {
+            loader.classList.remove('active');
+            loaderProgress.style.width = '0%';
+        }
+        
+        // Add sample data button for testing (hidden in production)
+        function addSampleDataButton() {
+            const sampleBtn = document.createElement('button');
+            sampleBtn.innerHTML = '<i class="fas fa-vial"></i> Load Sample Data';
+            sampleBtn.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                padding: 12px 20px;
+                background: linear-gradient(135deg, var(--warning-color), #e67e22);
+                color: white;
+                border: none;
+                border-radius: var(--border-radius-sm);
+                cursor: pointer;
+                font-weight: 600;
+                z-index: 100;
+                box-shadow: var(--shadow);
+                transition: var(--transition);
+            `;
+            sampleBtn.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-2px)';
+            });
+            sampleBtn.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+            sampleBtn.addEventListener('click', loadSampleData);
+            document.body.appendChild(sampleBtn);
+        }
+        
+        // Load sample data for testing
+        function loadSampleData() {
+            showLoader();
+            loaderText.textContent = 'Generating sample data...';
+            
+            // Generate sample data
+            const sampleProducts = [
+                'Paracetamol 500mg', 'Amoxicillin 250mg', 'Ibuprofen 400mg', 
+                'Vitamin C 1000mg', 'Cetirizine 10mg', 'Metformin 500mg',
+                'Losartan 50mg', 'Atorvastatin 20mg', 'Salbutamol Inhaler',
+                'Omeprazole 20mg', 'Diazepam 5mg', 'Cough Syrup 100ml',
+                'Aspirin 75mg', 'Lisinopril 10mg', 'Simvastatin 40mg',
+                'Levothyroxine 50mcg', 'Amlodipine 5mg', 'Metoprolol 50mg'
+            ];
+            
+            const sampleCategories = ['Pain Relief', 'Antibiotics', 'Vitamins', 'Antihistamines', 'Diabetes', 'Cardiovascular', 'Respiratory', 'Gastrointestinal'];
+            const sampleCashiers = ['John Doe', 'Jane Smith', 'Robert Johnson', 'Sarah Williams', 'Michael Brown'];
+            const samplePaymentModes = ['Cash', 'MPESA', 'Card', 'Insurance', 'Credit'];
+            const branches = ['Pharmacy POS', 'Katani Pharmacy'];
+            const customerNames = ['James Wilson', 'Mary Taylor', 'David Anderson', 'Lisa Thomas', 'Christopher Lee', 
+                                   'Susan Martin', 'Daniel Clark', 'Karen Lewis', 'Matthew Walker', 'Nancy Hall'];
+            
+            originalData = [];
+            
+            // Generate 2000 sample records
+            for (let i = 0; i < 2000; i++) {
+                const product = sampleProducts[Math.floor(Math.random() * sampleProducts.length)];
+                const category = sampleCategories[Math.floor(Math.random() * sampleCategories.length)];
+                const cashier = sampleCashiers[Math.floor(Math.random() * sampleCashiers.length)];
+                const paymentMode = samplePaymentModes[Math.floor(Math.random() * samplePaymentModes.length)];
+                const branch = branches[Math.floor(Math.random() * branches.length)];
+                const customer = customerNames[Math.floor(Math.random() * customerNames.length)];
+                
+                // Random date within last 90 days
+                const date = new Date();
+                date.setDate(date.getDate() - Math.floor(Math.random() * 90));
+                const hours = Math.floor(Math.random() * 24);
+                const minutes = Math.floor(Math.random() * 60);
+                date.setHours(hours, minutes);
+                
+                // Random quantity between 1 and 10
+                const qty = Math.floor(Math.random() * 10) + 1;
+                
+                // Random price between 50 and 5000
+                const price = Math.floor(Math.random() * 4950) + 50;
+                const amount = qty * price;
+                
+                // Generate invoice number
+                const invoiceNo = `INV${1000 + Math.floor(Math.random() * 900)}`;
+                
+                originalData.push({
+                    sale_id: i + 1000,
+                    product: product,
+                    customer_name: customer,
+                    service_point: branch,
+                    station: `Station ${Math.floor(Math.random() * 3) + 1}`,
+                    invoice_no: invoiceNo,
+                    qty: qty,
+                    user: cashier,
+                    status: 'Completed',
+                    price: price,
+                    amount: amount,
+                    date: `${date.getDate()}/${date.getMonth()+1}/${date.getFullYear()} ${hours}:${minutes.toString().padStart(2, '0')}`,
+                    category: category,
+                    parent_category: 'Medications',
+                    tax_category: 'VAT',
+                    payment_mode: paymentMode,
+                    unit_cost: price * 0.7, // 30% margin
+                    parsedDate: date
+                });
+                
+                // Update progress for every 100 records
+                if (i % 100 === 0) {
+                    updateLoaderProgress((i / 2000) * 100, `Generating sample data: ${i}/2000`);
+                }
+            }
+            
+            // Calculate date range for display
+            const dates = originalData.map(item => item.parsedDate).filter(d => d);
+            const minDate = new Date(Math.min(...dates.map(d => d.getTime())));
+            const maxDate = new Date(Math.max(...dates.map(d => d.getTime())));
+            
+            // Update date display
+            dateDisplay.classList.add('active');
+            dateRangeText.textContent = `${formatDate(minDate)} to ${formatDate(maxDate)}`;
+            
+            // Update date inputs
+            startDateInput.valueAsDate = minDate;
+            endDateInput.valueAsDate = maxDate;
+            startDate = minDate;
+            endDate = maxDate;
+            
+            // Calculate previous period data
+            calculatePreviousPeriodData();
+            
+            // Apply initial filter and update UI
+            filterData();
+            updateDashboard();
+            
+            hideLoader();
+            showNotification('Sample Data Loaded', 'Successfully loaded 2000 sample records for testing.', 'success');
+        }
+        
+        // Initialize sample data button (for testing only)
+        // Uncomment the line below to enable sample data loading for testing
+        // document.addEventListener('DOMContentLoaded', addSampleDataButton);
+    </script>
+</body>
+</html>
